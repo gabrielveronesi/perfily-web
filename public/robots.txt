@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://perfily.com.br/sitemap.xml

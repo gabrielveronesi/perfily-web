@@ -6,9 +6,10 @@ interface QuizProps {
   themeColor: string;
   onAnswer: (id: number, alternativaLetra: string) => void;
   onFinish: () => void;
+  isSubmitting?: boolean;
 }
 
-const Quiz: React.FC<QuizProps> = ({ questions, themeColor = 'indigo', onAnswer, onFinish }) => {
+const Quiz: React.FC<QuizProps> = ({ questions, themeColor = 'indigo', onAnswer, onFinish, isSubmitting = false }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const currentQuestion = questions[currentIndex];
   
@@ -37,6 +38,20 @@ const Quiz: React.FC<QuizProps> = ({ questions, themeColor = 'indigo', onAnswer,
   };
 
   if (!currentQuestion) return null;
+
+  if (isSubmitting) {
+    return (
+      <div className="py-16 animate-fade-in-up w-full text-center">
+        <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-100/50 max-w-lg mx-auto">
+          <div className="w-14 h-14 mx-auto border-4 border-slate-200 border-t-slate-900 rounded-full animate-spin"></div>
+          <h2 className="mt-6 text-2xl font-black text-slate-900">Gerando seu relatório...</h2>
+          <p className="mt-3 text-slate-500 text-sm leading-relaxed">
+            Estamos processando suas respostas e preparando seu resultado. Isso pode levar alguns segundos.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="py-8 animate-fade-in-up w-full">
@@ -77,7 +92,7 @@ const Quiz: React.FC<QuizProps> = ({ questions, themeColor = 'indigo', onAnswer,
         <div className="grid grid-cols-1 gap-4">
           {currentQuestion.options.map((option) => (
             <button
-              key={option.value}
+              key={`${currentQuestion.id}-${option.value}`}
               onClick={() => handleOptionSelect(option.value)}
               className={`w-full text-left p-5 border-2 border-slate-50 rounded-2xl hover:border-${themeColor}-500 hover:bg-${themeColor}-50/30 transition-all duration-200 group active:scale-[0.98]`}
             >

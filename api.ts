@@ -1,5 +1,11 @@
 
-import { ApiObterResultadoRequest, ApiObterResultadoResponse, ApiStartResponse } from './types';
+import {
+  ApiObterResultadoRequest,
+  ApiObterResultadoResponse,
+  ApiStartResponse,
+  ApiVerificaPagamentoRequest,
+  ApiVerificaPagamentoResponse
+} from './types';
 
 /**
  * Determina a Base URL da API com base no ambiente.
@@ -77,6 +83,32 @@ export const obterResultado = async (body: ApiObterResultadoRequest): Promise<Ap
     return await response.json();
   } catch (error) {
     console.error('[API Error] Falha ao obter resultado:', error);
+    throw error;
+  }
+};
+
+/**
+ * Verifica se o pagamento foi efetuado para uma sessÃ£o.
+ */
+export const verificaPagamento = async (body: ApiVerificaPagamentoRequest): Promise<ApiVerificaPagamentoResponse> => {
+  const url = `${BASE_URL}/app/verifica-pagamento`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erro na API: ${response.status} ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[API Error] Falha ao verificar pagamento:', error);
     throw error;
   }
 };

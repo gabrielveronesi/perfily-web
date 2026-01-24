@@ -1,13 +1,24 @@
 
 import React from 'react';
+import { TestType } from '../types';
 
 interface PreviewProps {
   perfil: string;
   frase: string;
+  texto?: string | null;
+  testType: TestType;
   onUnlock: () => void;
 }
 
-const Preview: React.FC<PreviewProps> = ({ perfil, frase, onUnlock }) => {
+const CTA_BY_TEST: Record<TestType, string> = {
+  personalidade: 'Como transformar seu perfil em hábitos que aumentam sua confiança, foco e resultados no dia a dia?',
+  carreira: 'Qual é o melhor caminho de carreira para o seu perfil — e como ganhar mais e ser promovido?',
+  relacionamento: 'Como usar seu perfil para melhorar a comunicação, reduzir atritos e fortalecer seus relacionamentos?',
+  qi: 'O que seu resultado revela sobre seu raciocínio — e quais estratégias elevam sua performance em provas e trabalho?'
+};
+
+const Preview: React.FC<PreviewProps> = ({ perfil, frase, texto, testType, onUnlock }) => {
+  const cta = CTA_BY_TEST[testType] ?? CTA_BY_TEST.carreira;
   return (
     <div className="py-6 animate-fade-in">
       <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-emerald-800 text-center mb-8 flex items-center justify-center gap-2">
@@ -34,6 +45,16 @@ const Preview: React.FC<PreviewProps> = ({ perfil, frase, onUnlock }) => {
           </h3>
           <p className="text-slate-600 leading-relaxed text-sm">"{frase}"</p>
         </div>
+
+        {texto && (
+          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <span className="w-6 h-6 bg-emerald-100 text-emerald-600 rounded-md flex items-center justify-center text-xs">02</span>
+              Resumo do Perfil
+            </h3>
+            <p className="text-slate-600 leading-relaxed text-sm">{texto}</p>
+          </div>
+        )}
 
         {/* ÁREA DE BLOQUEIO (Corrigida) */}
         <div className="relative rounded-3xl border border-slate-200 border-dashed bg-slate-50 min-h-[480px] flex items-center justify-center overflow-hidden p-4">
@@ -70,7 +91,7 @@ const Preview: React.FC<PreviewProps> = ({ perfil, frase, onUnlock }) => {
             <h4 className="text-xl font-extrabold text-slate-900 mb-3">Relatório Completo Bloqueado</h4>
             
             <p className="text-sm text-slate-500 mb-8 leading-relaxed">
-              Você descobriu seu perfil, mas ainda falta o mais importante: <strong>Como usar isso para ganhar mais e ser promovido?</strong>
+              Você descobriu seu perfil, mas ainda falta o mais importante: <strong>{cta}</strong>
             </p>
 
             <div className="space-y-3">
@@ -79,7 +100,9 @@ const Preview: React.FC<PreviewProps> = ({ perfil, frase, onUnlock }) => {
                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 px-6 rounded-2xl shadow-lg shadow-indigo-200 transition-all active:scale-[0.97] flex items-center justify-center gap-2 text-lg"
               >
                 <span>Desbloquear Resultado</span>
-                <span className="text-indigo-200 text-sm font-normal">| R$ 19,90</span>
+                <span className="text-indigo-200 text-sm font-normal">
+                  | de <span className="line-through">R$ 12,00</span> por <span className="text-white font-black">R$ 5,50</span>
+                </span>
               </button>
               
               <div className="flex items-center justify-center gap-2 text-[10px] text-slate-400 uppercase font-bold tracking-widest">

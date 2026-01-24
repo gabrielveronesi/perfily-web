@@ -3,7 +3,8 @@ import React, { useState, useEffect, useLayoutEffect, useCallback, useMemo, useR
 import { AppStep, UserSession, TestType, Question } from './types';
 import { TEST_CONFIGS } from './data';
 import { getCurrentPath, navigate, listenToRouteChanges, getRouterMode } from './router';
-import { obterResultado, startTestSession } from './api';
+import { obterResultado, startTestSession, verificaPagamento } from './api';
+import Seo from './components/Seo';
 import Home from './components/Home';
 import Landing from './components/Landing';
 import Quiz from './components/Quiz';
@@ -41,6 +42,8 @@ const App: React.FC = () => {
 
   const [step, setStep] = useState<AppStep>(AppStep.HOME);
   const [loading, setLoading] = useState(false);
+  const [submittingResult, setSubmittingResult] = useState(false);
+  const [routePath, setRoutePath] = useState<string>(() => getCurrentPath());
   const [apiQuestions, setApiQuestions] = useState<Question[] | null>(null);
   const [apiQuestionsTestType, setApiQuestionsTestType] = useState<TestType | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -54,6 +57,7 @@ const App: React.FC = () => {
   const syncRoute = useCallback(() => {
     // Pega o caminho unificado do router (ex: "/carreira")
     const fullPath = getCurrentPath(); 
+    setRoutePath(fullPath);
     // Remove a barra inicial para pegar o slug
     const slug = fullPath.replace(/^\//, '') as TestType;
     
@@ -216,6 +220,11 @@ const App: React.FC = () => {
   const submitResult = async () => {
     if (isSubmittingResultRef.current) return;
     if (!session.testType) return;
+    if (!session.id) {
+      setApiError('Sessão inválida. Volte e inicie o teste novamente.');
+      setStep(AppStep.LANDING);
+      return;
+    }
 
     const config = TEST_CONFIGS[session.testType];
     if (!config) return;
@@ -231,9 +240,10 @@ const App: React.FC = () => {
 
     isSubmittingResultRef.current = true;
     setLoading(true);
+    setSubmittingResult(true);
     setApiError(null);
     try {
-      const result = await obterResultado({ tipoTeste: config.apiCode, respostas });
+      const result = await obterResultado({ identificadorSessao: session.id, tipoTeste: config.apiCode, respostas });
 
       setSession(prev => ({ ...prev, result }));
       setStep(result.informacoesCompletas ? AppStep.RESULT : AppStep.PREVIEW);
@@ -243,6 +253,7 @@ const App: React.FC = () => {
       setStep(AppStep.LANDING);
     } finally {
       setLoading(false);
+      setSubmittingResult(false);
       isSubmittingResultRef.current = false;
     }
   };
@@ -250,6 +261,42 @@ const App: React.FC = () => {
   const activeConfig = useMemo(() => 
     session.testType ? TEST_CONFIGS[session.testType] : null
   , [session.testType]);
+
+  const seo = useMemo(() => {
+    const cleanPath = (routePath || '/').split('?')[0].split('#')[0];
+    const normalizedPath =
+      cleanPath !== '/' && cleanPath.endsWith('/') ? cleanPath.slice(0, -1) : cleanPath;
+
+    switch (normalizedPath) {
+      case '/personalidade':
+        return {
+          title: 'Teste de Personalidade Online | Perfily',
+          description: 'Descubra seu perfil de personalidade com base em escolhas simples e objetivas.'
+        };
+      case '/carreira':
+        return {
+          title: 'Teste de Carreira | Descubra seu Caminho Profissional',
+          description: 'Entenda qual trilha profissional combina mais com você usando o teste de carreira do Perfily.'
+        };
+      case '/relacionamento':
+        return {
+          title: 'Teste de Relacionamento | Perfil da Alma Gêmea',
+          description: 'Descubra qual perfil de relacionamento mais combina com você e sua forma de amar.'
+        };
+      case '/qi':
+        return {
+          title: 'Teste de QI Cognitivo | Estilo de Aprendizado',
+          description: 'Descubra seu estilo cognitivo e como você aprende melhor com o teste de QI do Perfily.'
+        };
+      case '/':
+      default:
+        return {
+          title: 'Perfily | Testes de Personalidade, Carreira e Relacionamento',
+          description:
+            'Faça testes inteligentes e descubra mais sobre sua personalidade, carreira, relacionamento e estilo cognitivo.'
+        };
+    }
+  }, [routePath]);
 
   const renderContent = () => {
     switch (step) {
@@ -288,6 +335,7 @@ const App: React.FC = () => {
             themeColor={activeConfig.color}
             onAnswer={handleAnswer}
             onFinish={submitResult}
+            isSubmitting={submittingResult}
           />
         );
       }
@@ -316,58 +364,81 @@ const App: React.FC = () => {
           );
         }
 
-        return <Preview perfil={session.result.perfil} frase={session.result.frase} onUnlock={() => setStep(AppStep.PAYMENT)} />;
+        if (!session.testType) {
+          return <Home onSelect={handleHomeSelect} isLoading={loading} />;
+        }
+
+        return (
+          <Preview
+            perfil={session.result.perfil}
+            frase={session.result.frase}
+            texto={session.result.texto}
+            testType={session.testType}
+            onUnlock={() => setStep(AppStep.PAYMENT)}
+          />
+        );
       }
       case AppStep.PAYMENT: {
         if (!session.result || !session.testType) {
           return <Home onSelect={handleHomeSelect} isLoading={loading} />;
         }
 
-        const checkUnlock = async () => {
-          if (isSubmittingResultRef.current) return false;
+        const checkUnlock = async (source: 'manual' | 'poll' = 'manual') => {
+           if (isSubmittingResultRef.current) return false;
 
-          const config = TEST_CONFIGS[session.testType as TestType];
-          if (!config) return false;
+           if (!session.id) return false;
 
-          const respostas = Object.entries(answersRef.current)
-            .map(([idPergunta, alternativaLetra]) => ({
-              idPergunta: Number(idPergunta),
-              alternativaLetra: String(alternativaLetra).toUpperCase()
-            }))
-            .sort((a, b) => a.idPergunta - b.idPergunta);
+           if (source === 'manual') {
+             setApiError(null);
+           }
 
-          if (respostas.length === 0) return false;
+           isSubmittingResultRef.current = true;
 
-          isSubmittingResultRef.current = true;
-          setLoading(true);
-          setApiError(null);
-          try {
-            const result = await obterResultado({ tipoTeste: config.apiCode, respostas });
-            setSession(prev => ({ ...prev, result }));
+           try {
+             const pagamento = await verificaPagamento({ identificadorSessao: session.id });
+             if (!pagamento.pagamentoEfetuado || !pagamento.informacoesCompletas) return false;
 
-            if (result.informacoesCompletas) {
-              setStep(AppStep.RESULT);
-              return true;
-            }
+             const config = TEST_CONFIGS[session.testType as TestType];
+             if (!config) return false;
 
-            return false;
-          } catch (error) {
-            console.error("Erro ao verificar desbloqueio na API:", error);
-            setApiError(GENERIC_API_ERROR_MESSAGE);
-            return false;
-          } finally {
-            setLoading(false);
-            isSubmittingResultRef.current = false;
-          }
-        };
+             const respostas = Object.entries(answersRef.current)
+               .map(([idPergunta, alternativaLetra]) => ({
+                 idPergunta: Number(idPergunta),
+                 alternativaLetra: String(alternativaLetra).toUpperCase()
+               }))
+               .sort((a, b) => a.idPergunta - b.idPergunta);
 
-        return (
-          <Payment
-            onCheck={checkUnlock}
-            onCancel={() => setStep(AppStep.PREVIEW)}
-          />
-        );
-      }
+             if (respostas.length === 0) return false;
+
+             const result = await obterResultado({ identificadorSessao: session.id, tipoTeste: config.apiCode, respostas });
+             setSession(prev => ({ ...prev, result }));
+
+             if (result.informacoesCompletas) {
+               setStep(AppStep.RESULT);
+               return true;
+             }
+
+             return false;
+           } catch (error) {
+             console.error("Erro ao verificar pagamento na API:", error);
+             if (source === 'manual') {
+               setApiError(GENERIC_API_ERROR_MESSAGE);
+             }
+             return false;
+           } finally {
+             isSubmittingResultRef.current = false;
+           }
+         };
+
+         return (
+           <Payment
+             onCheck={checkUnlock}
+             onCancel={() => setStep(AppStep.PREVIEW)}
+             qrCode={session.result.qrCode}
+             qrCodeBase64={session.result.qrCodeBase64}
+           />
+         );
+       }
       case AppStep.RESULT: {
         if (!session.result || !session.testType) {
           return (
@@ -386,7 +457,15 @@ const App: React.FC = () => {
         }
 
         if (!session.result.informacoesCompletas) {
-          return <Preview perfil={session.result.perfil} frase={session.result.frase} onUnlock={() => setStep(AppStep.PAYMENT)} />;
+          return (
+            <Preview
+              perfil={session.result.perfil}
+              frase={session.result.frase}
+              texto={session.result.texto}
+              testType={session.testType}
+              onUnlock={() => setStep(AppStep.PAYMENT)}
+            />
+          );
         }
 
         return <FullResult result={session.result} testType={session.testType} />;
@@ -397,6 +476,8 @@ const App: React.FC = () => {
   };
 
   return (
+    <>
+      <Seo title={seo.title} description={seo.description} />
     <div className="min-h-screen flex flex-col items-center bg-slate-50 text-slate-900 overflow-x-hidden pb-10">
       <header className="w-full max-w-2xl px-6 py-6 flex justify-between items-center sticky top-0 bg-slate-50/90 backdrop-blur-xl z-[999] border-b border-slate-100/50">
         <div onClick={() => handleNavigate('/')} className="flex items-center gap-2.5 cursor-pointer group active:scale-95 transition-transform">
@@ -441,6 +522,7 @@ const App: React.FC = () => {
         </div>
       </footer>
     </div>
+    </>
   );
 };
 

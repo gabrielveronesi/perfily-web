@@ -112,6 +112,7 @@ export interface ApiStartResponse {
 }
 
 export interface ApiObterResultadoRequest {
+  identificadorSessao: string;
   tipoTeste: string;
   respostas: {
     idPergunta: number;
@@ -123,5 +124,27 @@ export interface ApiObterResultadoResponse {
   informacoesCompletas: boolean;
   perfil: string;
   frase: string;
-  texto?: string;
+  texto: string | null;
+  pontosFortes?: string[] | null;
+  pontosDeAtencao?: string[] | null;
+  dicasPraticas?: string[] | null;
+  resumoCompartilhavel?: string | null;
+  plano7Dias?: string[] | null;
+  ambienteIdeal?: string | null;
+  ambienteEvitar?: string | null;
+  compatibilidades?: string[] | null;
+  sugestoesDeHobby?: string[] | null;
+  sugestoesDeCarreira?: string[] | null;
+  qrCode?: string | null;
+  qrCodeBase64?: string | null;
+}
+
+export interface ApiVerificaPagamentoRequest {
+  identificadorSessao: string;
+}
+
+export interface ApiVerificaPagamentoResponse {
+  informacoesCompletas: boolean;
+  pagamentoEfetuado: boolean;
+  diaPagamento: string | null;
 }

@@ -1,6 +1,7 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { TEST_CONFIGS } from '../data';
+import SeoContent from './SeoContent';
 
 interface HomeProps {
   onSelect: (path: string) => void;
@@ -8,6 +9,12 @@ interface HomeProps {
 }
 
 const Home: React.FC<HomeProps> = ({ onSelect, isLoading = false }) => {
+  const [startingSlug, setStartingSlug] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isLoading) setStartingSlug(null);
+  }, [isLoading]);
+
   return (
     <div className="py-12 animate-fade-in-up">
       <div className="text-center mb-12">
@@ -20,11 +27,17 @@ const Home: React.FC<HomeProps> = ({ onSelect, isLoading = false }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {Object.values(TEST_CONFIGS).map((test) => (
+        {Object.values(TEST_CONFIGS).map((test) => {
+          const isStartingThis = isLoading && startingSlug === test.slug;
+
+          return (
           <button
             key={test.slug}
             // Passa o caminho limpo. O router decide se vira /slug ou #/slug
-            onClick={() => onSelect(`/${test.slug}`)}
+            onClick={() => {
+              setStartingSlug(test.slug);
+              onSelect(`/${test.slug}`);
+            }}
             disabled={isLoading}
             className={`group relative bg-white p-8 rounded-[2.5rem] border border-slate-100 hover:border-${test.color}-300 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 text-left overflow-hidden flex flex-col h-full disabled:opacity-70 disabled:cursor-wait`}
           >
@@ -45,19 +58,39 @@ const Home: React.FC<HomeProps> = ({ onSelect, isLoading = false }) => {
 
             <div className="relative z-10 mt-auto">
               <div className={`inline-flex items-center gap-3 font-extrabold text-xs uppercase tracking-[0.15em] text-${test.color}-600 bg-${test.color}-50 px-6 py-3 rounded-2xl group-hover:bg-${test.color}-600 group-hover:text-white transition-all duration-300 w-full sm:w-auto justify-center sm:justify-start`}>
-                {isLoading ? 'Iniciando...' : (test.ctaLabel || 'Mapear agora')}
-                {!isLoading && (
+                {isStartingThis ? 'Iniciando...' : (test.ctaLabel || 'Mapear agora')}
+                {!isStartingThis && (
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                   </svg>
                 )}
-                {isLoading && (
+                {isStartingThis && (
                   <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin ml-2"></div>
                 )}
               </div>
             </div>
           </button>
-        ))}
+          );
+        })}
+      </div>
+
+      <div className="mt-10">
+        <SeoContent
+          title="Sobre este teste"
+          summary="Entenda como funcionam os testes do Perfily e o que você recebe no relatório completo."
+          content={[
+            'O Perfily reúne testes online de personalidade, carreira, relacionamento e estilo cognitivo para ajudar você a entender padrões de comportamento e tomar decisões com mais clareza.',
+            'Para que serve: ganhar autoconhecimento, identificar pontos fortes e pontos de atenção, e transformar isso em ações práticas para o dia a dia.',
+            'Como funciona: você responde perguntas objetivas e recebe um preview imediato. Ao desbloquear, você acessa o relatório completo com interpretações e recomendações.',
+            'Para quem é indicado: para quem quer se conhecer melhor, evoluir na vida profissional, melhorar a comunicação nos relacionamentos e estudar de forma mais eficiente.'
+          ]}
+          faqs={[
+            { q: 'Quanto tempo leva?', a: 'Os testes são rápidos e feitos para serem concluídos em poucos minutos, com resultado gerado logo em seguida.' },
+            { q: 'Preciso fazer todos os testes?', a: 'Não. Você pode começar pelo tema que faz mais sentido agora e fazer os outros quando quiser.' },
+            { q: 'O resultado é imediato?', a: 'Você vê um preview na hora. O relatório completo fica disponível após o desbloqueio.' },
+            { q: 'Posso refazer o teste?', a: 'Sim. Você pode refazer quando quiser para comparar resultados e acompanhar sua evolução.' }
+          ]}
+        />
       </div>
       
       <div className="mt-12 p-8 bg-gradient-to-br from-slate-900 to-indigo-950 rounded-[2.5rem] text-white overflow-hidden relative shadow-2xl">

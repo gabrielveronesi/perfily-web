@@ -1,21 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PixLogo } from './Icons';
 
 interface PaymentProps {
   onCancel: () => void;
-  onCheck: () => Promise<boolean>;
+  onCheck: (source?: 'manual' | 'poll') => Promise<boolean>;
+  qrCode?: string | null;
+  qrCodeBase64?: string | null;
 }
 
-const Payment: React.FC<PaymentProps> = ({ onCancel, onCheck }) => {
+const Payment: React.FC<PaymentProps> = ({ onCancel, onCheck, qrCode, qrCodeBase64 }) => {
   const [checking, setChecking] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(600); // 10 minutes
+  const [copied, setCopied] = useState(false);
+  const onCheckRef = useRef(onCheck);
+
+  useEffect(() => {
+    onCheckRef.current = onCheck;
+  }, [onCheck]);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setSeconds(s => (s > 0 ? s - 1 : 0));
     }, 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    void onCheckRef.current('poll');
+
+    const interval = setInterval(() => {
+      void onCheckRef.current('poll');
+    }, 15000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const formatTime = (s: number) => {
@@ -29,7 +47,7 @@ const Payment: React.FC<PaymentProps> = ({ onCancel, onCheck }) => {
     setStatusMessage(null);
     setChecking(true);
     try {
-      const unlocked = await onCheck();
+      const unlocked = await onCheck('manual');
       setStatusMessage(
         unlocked
           ? 'Pagamento confirmado e resultado liberado.'
@@ -37,6 +55,18 @@ const Payment: React.FC<PaymentProps> = ({ onCancel, onCheck }) => {
       );
     } finally {
       setChecking(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!qrCode) return;
+    try {
+      await navigator.clipboard.writeText(qrCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Se clipboard falhar (ex: navegador bloqueia), pelo menos seleciona o texto via UI
+      setCopied(false);
     }
   };
 
@@ -56,21 +86,58 @@ const Payment: React.FC<PaymentProps> = ({ onCancel, onCheck }) => {
 
       <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 max-w-sm mx-auto">
         <div className="flex justify-center mb-6">
-          <div className="w-48 h-48 border-4 border-slate-50 rounded-xl bg-slate-900 text-slate-100 flex items-center justify-center p-4">
-            <div className="text-center">
-              <div className="text-xs font-bold uppercase tracking-widest text-slate-300">
-                QR Code Pix
+          <div className={`w-48 h-48 border-4 border-slate-50 rounded-xl flex items-center justify-center overflow-hidden ${qrCodeBase64 ? 'bg-white' : 'bg-slate-900 text-slate-100 p-4'}`}>
+            {qrCodeBase64 ? (
+              <img
+                src={`data:image/png;base64,${qrCodeBase64}`}
+                alt="QR Code Pix"
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              <div className="text-center">
+                <div className="text-xs font-bold uppercase tracking-widest text-slate-300">
+                  QR Code Pix
+                </div>
+                <div className="mt-2 text-[10px] text-slate-400">
+                  Em breve
+                </div>
               </div>
-              <div className="mt-2 text-[10px] text-slate-400">
-                Em breve
-              </div>
-            </div>
+            )}
           </div>
         </div>
 
+        {qrCode && (
+          <div className="mb-6 text-left">
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest">
+                Pix copia e cola
+              </span>
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-700"
+              >
+                {copied ? 'Copiado!' : 'Copiar'}
+              </button>
+            </div>
+            <textarea
+              readOnly
+              value={qrCode}
+              rows={3}
+              className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded-2xl p-3 resize-none focus:outline-none"
+            />
+          </div>
+        )}
+
         <div className="mb-6">
           <span className="text-slate-500 text-xs font-bold uppercase tracking-widest block mb-1">Valor a pagar</span>
-          <span className="text-3xl font-black text-slate-900">R$ 19,90</span>
+          <div className="flex items-end justify-center gap-3">
+            <span className="text-sm font-bold text-slate-400 line-through">R$ 12,00</span>
+            <span className="text-3xl font-black text-slate-900">R$ 5,50</span>
+          </div>
+          <p className="mt-1 text-[10px] text-emerald-600 font-black uppercase tracking-widest">
+            Desconto aplicado
+          </p>
         </div>
 
         <div className="p-4 bg-indigo-50 rounded-2xl mb-6">
