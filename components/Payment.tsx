@@ -11,7 +11,7 @@ interface PaymentProps {
 const Payment: React.FC<PaymentProps> = ({ onCancel, onCheck, qrCode, qrCodeBase64 }) => {
   const [checking, setChecking] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [seconds, setSeconds] = useState(600); // 10 minutes
+  const [seconds, setSeconds] = useState(1800); // 30 minutes
   const [copied, setCopied] = useState(false);
   const onCheckRef = useRef(onCheck);
 
