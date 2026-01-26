@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { TestType } from '../types';
+import { PRICE_NEW, PRICE_OLD, formatBRL } from '../pricing';
 
 interface PreviewProps {
   perfil: string;
@@ -10,15 +11,45 @@ interface PreviewProps {
   onUnlock: () => void;
 }
 
-const CTA_BY_TEST: Record<TestType, string> = {
-  personalidade: 'Como transformar seu perfil em hábitos que aumentam sua confiança, foco e resultados no dia a dia?',
-  carreira: 'Qual é o melhor caminho de carreira para o seu perfil — e como ganhar mais e ser promovido?',
-  relacionamento: 'Como usar seu perfil para melhorar a comunicação, reduzir atritos e fortalecer seus relacionamentos?',
-  qi: 'O que seu resultado revela sobre seu raciocínio — e quais estratégias elevam sua performance em provas e trabalho?'
-};
+const UNLOCK_BENEFITS = [
+  'Seu perfil detalhado e explicado',
+  'Seus pontos fortes naturais',
+  'Seus pontos de atenção',
+  'Como esse perfil impacta decisões do dia a dia',
+  'Dicas práticas para evoluir',
+  'Como você funciona sob pressão',
+  'Como usar esse perfil a seu favor'
+] as const;
 
-const Preview: React.FC<PreviewProps> = ({ perfil, frase, texto, testType, onUnlock }) => {
-  const cta = CTA_BY_TEST[testType] ?? CTA_BY_TEST.carreira;
+const FULL_RESULT_PREVIEW = [
+  'Como você aprende melhor',
+  'Onde você mais se destaca naturalmente',
+  'Seus maiores bloqueios invisíveis',
+  'O que mais te motiva de verdade',
+  'Dicas práticas para usar seu perfil no dia a dia'
+] as const;
+
+const CheckIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor">
+    <path
+      fillRule="evenodd"
+      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+      clipRule="evenodd"
+    />
+  </svg>
+);
+
+const LockIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor">
+    <path
+      fillRule="evenodd"
+      d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+      clipRule="evenodd"
+    />
+  </svg>
+);
+
+const Preview: React.FC<PreviewProps> = ({ perfil, frase, texto, onUnlock }) => {
   return (
     <div className="py-6 animate-fade-in">
       <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-emerald-800 text-center mb-8 flex items-center justify-center gap-2">
@@ -89,10 +120,36 @@ const Preview: React.FC<PreviewProps> = ({ perfil, frase, texto, testType, onUnl
             </div>
             
             <h4 className="text-xl font-extrabold text-slate-900 mb-3">Relatório Completo Bloqueado</h4>
-            
-            <p className="text-sm text-slate-500 mb-8 leading-relaxed">
-              Você descobriu seu perfil, mas ainda falta o mais importante: <strong>{cta}</strong>
-            </p>
+
+            <div className="space-y-4 mt-6 mb-6 text-left">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <h5 className="text-[11px] font-black tracking-widest text-slate-800 mb-3">
+                  Ao desbloquear seu resultado completo, você vai receber:
+                </h5>
+                <ul className="space-y-2 text-sm text-slate-700 leading-snug">
+                  {UNLOCK_BENEFITS.map(item => (
+                    <li key={item} className="flex gap-3">
+                      <CheckIcon className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <h5 className="text-[11px] font-black tracking-widest text-slate-800 mb-3">
+                  O que você verá no resultado completo:
+                </h5>
+                <ul className="space-y-2 text-sm text-slate-700 leading-snug">
+                  {FULL_RESULT_PREVIEW.map(item => (
+                    <li key={item} className="flex gap-3">
+                      <LockIcon className="h-4 w-4 text-indigo-600 flex-shrink-0 mt-0.5" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
 
             <div className="space-y-3">
               <button 
@@ -101,7 +158,8 @@ const Preview: React.FC<PreviewProps> = ({ perfil, frase, texto, testType, onUnl
               >
                 <span>Desbloquear Resultado</span>
                 <span className="text-indigo-200 text-sm font-normal">
-                  | de <span className="line-through">R$ 12,00</span> por <span className="text-white font-black">R$ 5,50</span>
+                  | de <span className="line-through">{formatBRL(PRICE_OLD)}</span> por{' '}
+                  <span className="text-white font-black">{formatBRL(PRICE_NEW)}</span>
                 </span>
               </button>
               

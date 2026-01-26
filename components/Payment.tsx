@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PixLogo } from './Icons';
+import { PRICE_NEW, PRICE_OLD, formatBRL } from '../pricing';
 
 interface PaymentProps {
   onCancel: () => void;
@@ -132,8 +133,8 @@ const Payment: React.FC<PaymentProps> = ({ onCancel, onCheck, qrCode, qrCodeBase
         <div className="mb-6">
           <span className="text-slate-500 text-xs font-bold uppercase tracking-widest block mb-1">Valor a pagar</span>
           <div className="flex items-end justify-center gap-3">
-            <span className="text-sm font-bold text-slate-400 line-through">R$ 12,00</span>
-            <span className="text-3xl font-black text-slate-900">R$ 5,50</span>
+            <span className="text-sm font-bold text-slate-400 line-through">de {formatBRL(PRICE_OLD)}</span>
+            <span className="text-3xl font-black text-slate-900">por {formatBRL(PRICE_NEW)}</span>
           </div>
           <p className="mt-1 text-[10px] text-emerald-600 font-black uppercase tracking-widest">
             Desconto aplicado
